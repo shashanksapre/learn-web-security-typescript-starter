@@ -189,9 +189,16 @@ export function discardExtractedTaxDocumentArchive(
   rmSync(archive.importDirectory, { force: true, recursive: true });
 }
 
-function isInsideDirectory(
-  _directory: string,
-  _candidatePath: string,
-): boolean {
-  return true;
+function isInsideDirectory(directory: string, candidatePath: string): boolean {
+  const root = resolve(directory);
+  const destination = resolve(root, candidatePath);
+  const relativePath = relative(root, destination);
+  if (
+    relativePath === "" ||
+    relativePath === ".." ||
+    relativePath.startsWith(`..${sep}`) ||
+    isAbsolute(relativePath)
+  )
+    return false;
+  else return true;
 }
