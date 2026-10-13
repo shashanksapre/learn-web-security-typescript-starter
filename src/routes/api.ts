@@ -1,4 +1,5 @@
 import { Router } from "express";
+
 import type { Dependencies } from "../dependencies.ts";
 import { getCurrentSession } from "../auth/sessions.ts";
 import {

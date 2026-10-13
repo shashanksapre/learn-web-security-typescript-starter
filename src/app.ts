@@ -1,5 +1,8 @@
 import { randomBytes } from "node:crypto";
+
 import express, { type RequestHandler } from "express";
+import cors from "cors";
+
 import { validateRequestOrigin } from "./csrf.ts";
 import type { Dependencies } from "./dependencies.ts";
 import { errorHandler, sendErrorPage } from "./errors.ts";
@@ -74,7 +77,17 @@ export function createApp(deps: Dependencies): express.Express {
   app.use(express.json());
   app.use(createPawPalRouter(deps));
   app.use(validateRequestOrigin(deps.appOrigin));
-  app.use("/api", apiCors);
+  // app.use("/api", apiCors);
+  app.use(
+    "/api/products",
+    cors({
+      origin: "*",
+      credentials: false,
+      methods: ["GET"],
+      allowedHeaders: [],
+      optionsSuccessStatus: 204,
+    }),
+  );
   app.use(createApiRouter(deps));
 
   app.use(createArchiveRouter(deps));
