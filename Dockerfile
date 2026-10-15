@@ -1,10 +1,27 @@
-FROM node:24-alpine
+FROM node:24-alpine AS dependencies
 
 WORKDIR /app
 
-COPY . .
-RUN npm ci
+COPY package.json package-lock.json ./
 
-EXPOSE 3000
+RUN npm ci --omit=dev
 
-CMD ["npm", "start"]
+FROM node:24-alpine AS runtime
+
+WORKDIR /app
+
+COPY --from=dependencies /app/node_modules ./node_modules
+
+COPY package.json ./
+
+COPY src ./src
+
+COPY public ./public
+
+RUN mkdir -p data data/uploads data/bulk-tax-documents && chown -R node:node data
+
+COPY --chown=node:node data/uploads/mystery-shack-tax-exemption.pdf ./data/uploads/mystery-shack-tax-exemption.pdf
+
+USER node
+
+CMD ["node", "src/main.ts"]
