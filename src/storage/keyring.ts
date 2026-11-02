@@ -1,3 +1,5 @@
+import { encrypt, decrypt } from "./encryption.ts";
+
 const ACTIVE_VERSION_ENV = "DATA_ENCRYPTION_ACTIVE_VERSION";
 const KEY_ENV_PREFIX = "DATA_ENCRYPTION_KEY_";
 const KEY_HEX_PATTERN = /^[0-9a-f]{64}$/i;
@@ -78,16 +80,25 @@ export function requireKeyring(keyring: Keyring | undefined): Keyring {
 
 export function encryptStringWithKeyring(
   value: string,
-  _keyring: Keyring | undefined,
+  keyring: Keyring | undefined,
 ): string {
-  return value;
+  const encryptedPayload = encryptWithKeyring(
+    Buffer.from(value, "utf-8"),
+    keyring,
+  );
+
+  return serializeEncryptedPayload(encryptedPayload).toString("utf-8");
 }
 
 export function decryptStringWithKeyring(
   value: string,
-  _keyring: Keyring | undefined,
+  keyring: Keyring | undefined,
 ): string {
-  return value;
+  const deserializedPayload = deserializeEncryptedPayload(
+    Buffer.from(value, "utf-8"),
+  );
+
+  return decryptWithKeyring(deserializedPayload, keyring).toString("utf-8");
 }
 
 export function serializeEncryptedPayload(
@@ -158,4 +169,34 @@ function decodeBase64(value: string): Buffer {
   }
 
   return decoded;
+}
+
+export function encryptWithKeyring(
+  plaintext: Buffer,
+  keyring: Keyring | undefined,
+): VersionedEncryptedPayload {
+  keyring = requireKeyring(keyring);
+  const activeKey = keyring.keys.get(keyring.activeVersion);
+
+  if (!activeKey) {
+    throw new Error("Key not found!");
+  }
+
+  const ciphertext = encrypt(plaintext, activeKey);
+
+  return { ...ciphertext, keyVersion: keyring.activeVersion };
+}
+
+export function decryptWithKeyring(
+  payload: VersionedEncryptedPayload,
+  keyring: Keyring | undefined,
+): Buffer {
+  keyring = requireKeyring(keyring);
+  const payloadKey = keyring.keys.get(payload.keyVersion);
+
+  if (!payloadKey) {
+    throw new Error("Key not found!");
+  }
+
+  return decrypt(payload, payloadKey);
 }
