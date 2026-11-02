@@ -16,6 +16,7 @@ export type Dependencies = {
   keyring: Keyring | undefined;
   db: DatabaseSync;
   pawPalApiKey: string;
+  trustedProxyHops: number;
 };
 
 export function requireEnv(name: string): string {
@@ -62,6 +63,10 @@ export function initDependencies(
     downloadSigningKey: Buffer.from(requireEnv("DOWNLOAD_SIGNING_KEY"), "hex"),
     keyring: loadOptionalKeyring(env),
     pawPalApiKey: requireEnv("PAWPAL_API_KEY"),
+    trustedProxyHops: parseNonNegativeInteger(
+      env.TRUST_PROXY_HOPS ?? "0",
+      "TRUST_PROXY_HOPS",
+    ),
   };
 
   return { ...values, db: openDatabase(values.databasePath) };
