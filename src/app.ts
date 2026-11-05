@@ -52,9 +52,13 @@ import { createRateLimiter } from "./security/rateLimit.ts";
 export function createApp(deps: Dependencies): express.Express {
   migrateSensitiveDataAtRest(deps.db, deps.keyring);
   const app = express();
-  const rateLimiter = createRateLimiter({
+  const allRateLimiter = createRateLimiter({
     windowSeconds: 60,
     max: 100,
+  });
+  const productsRateLimiter = createRateLimiter({
+    windowSeconds: 60,
+    max: 30,
   });
   app.set("trust proxy", deps.trustedProxyHops);
 
@@ -106,7 +110,7 @@ export function createApp(deps: Dependencies): express.Express {
   app.get("/health", (_req, res) => {
     res.json({ ok: true, app: "bearly-secure" });
   });
-  app.use(rateLimiter);
+  app.use(allRateLimiter);
   app.use(express.static("public"));
   app.use(
     "/vendor/simplewebauthn",
@@ -120,6 +124,7 @@ export function createApp(deps: Dependencies): express.Express {
   // app.use("/api", apiCors);
   app.use(
     "/api/products",
+    productsRateLimiter,
     cors({
       origin: "*",
       credentials: false,
