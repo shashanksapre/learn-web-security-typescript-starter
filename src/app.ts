@@ -25,6 +25,7 @@ import { createSupportRouter } from "./routes/support.ts";
 import { migrateSensitiveDataAtRest } from "./storage/migrations.ts";
 import helmet from "helmet";
 import { createRateLimiter } from "./security/rateLimit.ts";
+import { createLoadShedder } from "./security/loadShedding.ts";
 
 // const apiCors: RequestHandler = (req, res, next) => {
 //   const origin = req.header("Origin");
@@ -110,6 +111,7 @@ export function createApp(deps: Dependencies): express.Express {
   app.get("/health", (_req, res) => {
     res.json({ ok: true, app: "bearly-secure" });
   });
+  app.use(createLoadShedder({ maxConcurrent: 50, retryAfterSeconds: 1 }));
   app.use(allRateLimiter);
   app.use(express.static("public"));
   app.use(
