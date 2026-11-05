@@ -4,6 +4,16 @@ import { getCurrentSession } from "../auth/sessions.ts";
 import { listCartItems } from "../cart.ts";
 import { listProducts, searchProducts } from "../products.ts";
 import { renderSearchPage, renderStorefrontPage } from "../views/storefront.ts";
+import { createRateLimiter } from "../security/rateLimit.ts";
+import { sendErrorPage } from "../errors.ts";
+
+const searchThrottler = createRateLimiter({
+  windowSeconds: 1,
+  max: 5,
+  key: (_req) => "key",
+  onLimit: (_req, res, _state) =>
+    sendErrorPage(res, 429, "Too Many Requests", "Try again later!"),
+});
 
 export function createStorefrontRouter(deps: Dependencies): Router {
   const { db } = deps;
@@ -21,7 +31,7 @@ export function createStorefrontRouter(deps: Dependencies): Router {
       .send(renderStorefrontPage(current, products, cartQuantities));
   });
 
-  router.get("/search", (req, res) => {
+  router.get("/search", searchThrottler, (req, res) => {
     const current = getCurrentSession(db, req.header("cookie"));
     const cartQuantities = current
       ? getCartQuantities(current.user.id)
