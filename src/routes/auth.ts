@@ -57,7 +57,11 @@ import {
   renderTotpLoginPage as renderTotpLoginView,
 } from "../views/auth.ts";
 import { logEvent } from "../logger.ts";
-import { canonicalEmailKey, createRateLimiter } from "../security/rateLimit.ts";
+import {
+  canonicalEmailKey,
+  clientIpKey,
+  createRateLimiter,
+} from "../security/rateLimit.ts";
 import { sendErrorPage } from "../errors.ts";
 import { protectSignupFromBots } from "../security/botRisk.ts";
 
@@ -99,12 +103,18 @@ const passwordResetAccountRateLimiter = createRateLimiter({
 });
 
 function logAuthenticationEvent(
-  _req: Request,
-  _res: Response,
+  req: Request,
+  res: Response,
   eventName: "login_attempt" | "password_reset_request",
   fields: AuthenticationLogFields,
 ): void {
-  logEvent(eventName, fields);
+  logEvent(eventName, {
+    ...fields,
+    requestId: res.locals.requestId,
+    sourceIp: clientIpKey(req),
+    userId: fields.userId ?? null,
+    outcome: fields.success ? "success" : "failure",
+  });
 }
 
 export function createAuthRouter(deps: Dependencies): Router {

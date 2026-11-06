@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 
 import express, { type Response } from "express";
 import cors from "cors";
@@ -62,6 +62,13 @@ export function createApp(deps: Dependencies): express.Express {
     max: 30,
   });
   app.set("trust proxy", deps.trustedProxyHops);
+
+  app.use((_req, res, next) => {
+    const requestId = randomUUID();
+    res.set("X-Request-Id", requestId);
+    res.locals.requestId = requestId;
+    next();
+  });
 
   app.use((_req, res, next) => {
     const cspNonce = randomBytes(16).toString("base64");
