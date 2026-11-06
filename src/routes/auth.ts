@@ -59,6 +59,7 @@ import {
 import { logEvent } from "../logger.ts";
 import { canonicalEmailKey, createRateLimiter } from "../security/rateLimit.ts";
 import { sendErrorPage } from "../errors.ts";
+import { protectSignupFromBots } from "../security/botRisk.ts";
 
 type AuthenticationLogFields = {
   success: boolean;
@@ -366,7 +367,7 @@ export function createAuthRouter(deps: Dependencies): Router {
     res.redirect(challenge.return_to);
   });
 
-  router.post("/signup", async (req, res) => {
+  router.post("/signup", protectSignupFromBots, async (req, res) => {
     if (getCurrentSession(db, req.header("cookie"))) {
       res.redirect("/account");
       return;
